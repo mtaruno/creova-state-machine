@@ -1,155 +1,154 @@
 #!/usr/bin/env python3
-'''
-Navigation Node for controlling the mobile base
-'''
 
+# Standard library imports
+import json
+from typing import Optional, List, Dict
+
+# ROS 2 imports
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Empty
-from geometry_msgs.msg import PoseStamped
-from custom_msgs.msg import Status
+from std_msgs.msg import String
 
-class NavigationNode(Node):
+class PerceptionNode(Node):
     """
-    Node responsible for controlling the mobile base for navigation
+    Perception Node for handling object detection and manipulation requests.
+    
+    This node manages object perception tasks by:
+    1. Receiving and storing lists of detected objects
+    2. Processing pick requests for specific objects
+    3. Matching requested objects against detected objects
+    4. Publishing results for manipulation or validation
     """
+    
     def __init__(self):
-        super().__init__('navigation_node')
-
-        # Publishers
-        self.feedback_pub = self.create_publisher(
-            Status,
-            '/navigation/feedback',
-            10
-        )
-        self.at_location_pub = self.create_publisher(
-            Status,
-            '/navigation/at_location',
-            10
-        )
-        self.delivery_complete_pub = self.create_publisher(
-            Status,
-            '/navigation/delivery_complete',
-            10
-        )
-        self.at_base_pub = self.create_publisher(
-            Status,
-            '/navigation/at_base',
-            10
-        )
-
+        """Initialize the perception node with subscribers and publishers."""
+        super().__init__('perception_node')
+        
+        # State variables to store latest data
+        self.latest_object_list: Optional[List[Dict]] = None  # List of detected objects
+        self.target_object: Optional[str] = None  # Currently requested object
+        
         # Subscribers
-        self.go_to_arm_sub = self.create_subscription(
-            PoseStamped,
-            '/navigation/go_to_arm',
-            self.handle_go_to_arm,
-            10
-        )
-        self.go_to_user_sub = self.create_subscription(
-            PoseStamped,
-            '/navigation/go_to_user',
-            self.handle_go_to_user,
-            10
-        )
-        self.return_to_base_sub = self.create_subscription(
-            Empty,
-            '/navigation/return_to_base',
-            self.handle_return_to_base,
-            10
-        )
+        # 1. Object list subscriber - receives detected objects
+        self.object_list_sub = self.create_subscription(
+            String,
+            '/object_list',
+            self.object_list_callback,
+            10)  # Queue size of 10 messages
+        
+        # 2. Pick request subscriber - receives object pick requests
+        self.pick_object_sub = self.create_subscription(
+            String,
+            '/pick_object',
+            self.pick_object_callback,
+            10)
+        
+        # Publishers
+        # 1. Manipulation publisher - sends object details for manipulation
+        self.manipulation_pub = self.create_publisher(
+            String,
+            '/manipulation_object',
+            10)
+        
+        # 2. Validation publisher - sends object name for validation
+        self.validation_pub = self.create_publisher(
+            String,
+            '/validation_object',
+            10)
+        
+        self.get_logger().info('Perception node started')
 
-        # State variables
-        self.current_location = "base"  # Start at base
-
-        self.get_logger().info('Navigation Node initialized')
-
-    def handle_go_to_arm(self, msg: PoseStamped):
+    def object_list_callback(self, msg: String):
         """
-        Handle command to navigate to the arm for handoff
+        Handle incoming object list messages.
+        
+        Args:
+            msg (String): JSON string containing list of detected objects:
+                [
+                    {
+                        "name": str,  # Object name
+                        "x": float,   # X coordinate
+                        "y": float,   # Y coordinate
+                        "z": float    # Z coordinate
+                    },
+                    ...
+                ]
         """
-        self.get_logger().info(f'Received command to navigate to arm position: {msg.pose.position}')
+        try:
+            # Parse and store the object list
+            self.latest_object_list = json.loads(msg.data)
+            self.get_logger().info(f'Received object list with {len(self.latest_object_list)} objects')
+            self.process_objects()  # Process if we have a target object
+        except json.JSONDecodeError:
+            self.get_logger().error('Failed to parse object list JSON')
+        except Exception as e:
+            self.get_logger().error(f'Error processing object list: {str(e)}')
 
-        # Simulate navigation to arm (in a real system, this would control the mobile base)
-        # For demo purposes, we'll just simulate success
-        self.current_location = "arm"
-
-        # Send feedback that navigation was successful
-        feedback = Status()
-        feedback.success = True
-        feedback.status_code = 0
-        feedback.message = "Successfully navigated to arm position"
-
-        self.feedback_pub.publish(feedback)
-
-        # Also publish to at_location topic
-        at_location_msg = Status()
-        at_location_msg.success = True
-        at_location_msg.status_code = 0
-        at_location_msg.message = "At arm location for handoff"
-
-        self.at_location_pub.publish(at_location_msg)
-        self.get_logger().info('Navigation to arm completed')
-
-    def handle_go_to_user(self, msg: PoseStamped):
+    def pick_object_callback(self, msg: String):
         """
-        Handle command to navigate to the user for delivery
+        Handle incoming pick object requests.
+        
+        Args:
+            msg (String): Name of the object to pick
         """
-        self.get_logger().info(f'Received command to navigate to user position: {msg.pose.position}')
+        self.target_object = msg.data
+        self.get_logger().info(f'Received pick request for object: {self.target_object}')
+        self.process_objects()  # Process if we have an object list
 
-        # Simulate navigation to user
-        self.current_location = "user"
-
-        # Send feedback that navigation was successful
-        feedback = Status()
-        feedback.success = True
-        feedback.status_code = 0
-        feedback.message = "Successfully navigated to user position"
-
-        self.feedback_pub.publish(feedback)
-
-        # Also publish to delivery_complete topic
-        delivery_msg = Status()
-        delivery_msg.success = True
-        delivery_msg.status_code = 0
-        delivery_msg.message = "Delivery to user complete"
-
-        self.delivery_complete_pub.publish(delivery_msg)
-        self.get_logger().info('Navigation to user completed')
-
-    def handle_return_to_base(self, _):
+    def process_objects(self):
         """
-        Handle command to return to base
+        Process objects when both list and target are available.
+        
+        This method:
+        1. Checks if both object list and target are available
+        2. Searches for the target object in the list
+        3. If found, publishes full object details for manipulation
+        4. If not found, publishes object name for validation
+        5. Resets state after processing
         """
-        self.get_logger().info('Received command to return to base')
+        if self.latest_object_list is None or self.target_object is None:
+            return
 
-        # Simulate navigation to base
-        self.current_location = "base"
+        # Search for the target object in the list
+        for obj in self.latest_object_list:
+            if obj.get('name') == self.target_object:
+                # Found the object, publish its details
+                manipulation_msg = String()
+                manipulation_msg.data = json.dumps(obj)
+                self.manipulation_pub.publish(manipulation_msg)
+                self.get_logger().info(f'Found object {self.target_object}, published to manipulation')
+                
+                # Reset state
+                self.latest_object_list = None
+                self.target_object = None
+                return
 
-        # Send feedback that navigation was successful
-        feedback = Status()
-        feedback.success = True
-        feedback.status_code = 0
-        feedback.message = "Successfully returned to base"
-
-        self.feedback_pub.publish(feedback)
-
-        # Also publish to at_base topic
-        at_base_msg = Status()
-        at_base_msg.success = True
-        at_base_msg.status_code = 0
-        at_base_msg.message = "Robot has returned to base"
-
-        self.at_base_pub.publish(at_base_msg)
-        self.get_logger().info('Return to base completed')
+        # Object not found, request validation
+        validation_msg = String()
+        validation_msg.data = self.target_object
+        self.validation_pub.publish(validation_msg)
+        self.get_logger().info(f'Object {self.target_object} not found, requesting validation')
+        
+        # Reset state
+        self.latest_object_list = None
+        self.target_object = None
 
 def main(args=None):
     """
-    Main function to initialize and run the node
+    Main entry point for the perception node.
+    
+    Initializes ROS 2, creates and spins the perception node.
+    Handles graceful shutdown on keyboard interrupt.
     """
     rclpy.init(args=args)
-    node = NavigationNode()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    node = PerceptionNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    main() 
