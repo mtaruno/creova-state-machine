@@ -12,11 +12,11 @@ This README describes the high-level Finite State Machine (FSM) architecture, co
 
 ## 🧠 System Overview
 
-**Goal**: Take a voice command like “Bring me an apple” and autonomously:
+**Goal**: Take a voice command like "Bring me an apple" and autonomously:
 
 1. Detect the object (e.g., apple)
 2. Use a robot arm to pick it up
-3. Navigate a mobile base to the user’s location
+3. Navigate a mobile base to the user's location
 4. Deliver the object
 
 ---
@@ -38,7 +38,7 @@ The orchestration node maintains the following states:
 
 ## 🔁 Example Event Sequence
 
-### Example: User says “Bring me an apple”
+### Example: User says "Bring me an apple"
 
 | Step | From → To                   | Topic/Service/Action             | Message Type                | Notes/Key Fields                   | FSM Transition                      |
 | ---- | --------------------------- | -------------------------------- | --------------------------- | ---------------------------------- | ----------------------------------- |
@@ -131,3 +131,142 @@ To test the system, run the test script:
 ```bash
 ros2 run creova_state_machine test_system.py
 ```
+
+# Creova State Machine
+
+A ROS 2 package for voice-controlled delivery robot system with navigation and perception capabilities.
+
+## Prerequisites
+
+- ROS 2 Humble
+- Python 3.10
+- Required ROS 2 packages:
+  - std_msgs
+  - geometry_msgs
+  - nav_msgs
+  - sensor_msgs
+  - tf2_ros
+
+## Setup Instructions
+
+1. Clone the repository:
+```bash
+cd ~/new_ws/src
+git clone <repository-url> creova_state_machine
+```
+
+2. Install dependencies:
+```bash
+cd ~/new_ws
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+3. Build the package:
+```bash
+colcon build --symlink-install
+```
+
+4. Source the workspace:
+```bash
+source install/setup.bash
+```
+
+## Testing with Navigation Team
+
+### Topic Structure
+
+The navigation node uses the following topics:
+
+1. Subscribed Topics:
+   - `/navigation/goal` (std_msgs/String)
+     - Receives location requests in JSON format
+     - Example: `{"name": "office", "x": 5.2, "y": 3.1}`
+   
+   - `/navigation/status` (std_msgs/String)
+     - Receives navigation status updates in JSON format
+     - Example: `{"status": "arrived", "location": "office", "distance": 2.4, "time": 1.8}`
+
+2. Published Topics:
+   - `/navigation/set_goal` (std_msgs/String)
+     - Forwards location requests to the navigation system
+     - Same JSON format as received from `/navigation/goal`
+   
+   - `/navigation/status_summary` (std_msgs/String)
+     - Publishes navigation status summaries
+     - Same JSON format as received from `/navigation/status`
+
+### Testing Steps
+
+1. Start the navigation node:
+```bash
+ros2 run creova_state_machine navigation_node
+```
+
+2. Send a location request:
+```bash
+ros2 topic pub --once /navigation/goal std_msgs/String "data: '{\"name\": \"office\", \"x\": 5.2, \"y\": 3.1}'"
+```
+
+3. Send a navigation status update:
+```bash
+ros2 topic pub --once /navigation/status std_msgs/String "data: '{\"status\": \"arrived\", \"location\": \"office\", \"distance\": 2.4, \"time\": 1.8}'"
+```
+
+4. Monitor the status summary:
+```bash
+ros2 topic echo /navigation/status_summary
+```
+
+### Launch File
+
+To launch the entire system:
+```bash
+ros2 launch creova_state_machine orchestration.launch.py
+```
+
+With simulation time:
+```bash
+ros2 launch creova_state_machine orchestration.launch.py use_sim_time:=true
+```
+
+## Message Formats
+
+### Location Request
+```json
+{
+    "name": "office",
+    "x": 5.2,
+    "y": 3.1
+}
+```
+
+### Navigation Status
+```json
+{
+    "status": "arrived",
+    "location": "office",
+    "distance": 2.4,
+    "time": 1.8
+}
+```
+
+## Troubleshooting
+
+1. If topics are not found:
+   - Check if the node is running
+   - Verify topic names and remappings
+   - Use `ros2 topic list` to see available topics
+
+2. If messages are not received:
+   - Check JSON format
+   - Verify topic names
+   - Monitor node logs for errors
+
+3. Common Issues:
+   - Make sure to source the workspace
+   - Check ROS 2 network configuration
+   - Verify all dependencies are installed
+
+## Support
+
+For issues or questions, contact the development team or create an issue in the repository.

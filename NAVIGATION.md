@@ -1,71 +1,106 @@
 # Navigation Node Documentation
 
 ## Overview
-The Navigation Node serves as the central component for managing robot navigation tasks. It acts as a bridge between high-level navigation requests and the actual navigation system, handling location requests and monitoring navigation status.
+The Navigation Node is responsible for handling location requests and navigation status updates in the Creova State Machine system. It acts as an intermediary between the high-level system commands and the navigation system.
 
 ## Topics
 
-### Subscribers
+### Subscribed Topics
 
-#### 1. `/requested_location` (std_msgs/String)
-- **Purpose**: Receives navigation requests from other system components
-- **Message Format**: JSON string
-```json
-{
-    "name": "Zubin's office",
-    "x": 5.2,
-    "y": 3.1
-}
-```
-- **Required Fields**:
-  - `name`: Location identifier
-  - `x`: X coordinate (float)
-  - `y`: Y coordinate (float)
-- **Example Usage**:
-```bash
-ros2 topic pub /requested_location std_msgs/String '{"data": "{\"name\": \"Zubin'\''s office\", \"x\": 5.2, \"y\": 3.1}"}' --once
-```
+1. `/requested_location` (std_msgs/String)
+   - Receives location requests in JSON format
+   - Example payload:
+     ```json
+     {
+       "name": "office",
+       "x": 5.2,
+       "y": 3.1
+     }
+     ```
 
-#### 2. `/nav_status` (std_msgs/String)
-- **Purpose**: Receives navigation system status updates
-- **Message Format**: JSON string
-```json
-{
-    "status": "arrived",
-    "location": "Zubin's office",
-    "distance": 2.4,
-    "time": 1.8
-}
-```
-- **Required Fields**:
-  - `status`: Current navigation status (e.g., "arrived", "moving", "error")
-  - `location`: Current location name
-  - `distance`: Distance to goal in meters
-  - `time`: Time taken/remaining in seconds
-- **Example Usage**:
-```bash
-ros2 topic pub /nav_status std_msgs/String '{"data": "{\"status\": \"arrived\", \"location\": \"Zubin'\''s office\", \"distance\": 2.4, \"time\": 1.8}"}' --once
-```
+2. `/nav2_status` (std_msgs/String)
+   - Receives navigation status updates in JSON format
+   - Example payload:
+     ```json
+     {
+       "status": "arrived",
+       "location": "office",
+       "distance": 2.4,
+       "time": 1.8
+     }
+     ```
 
-### Publishers
+### Published Topics
 
-#### 1. `/go_to_location` (std_msgs/String)
-- **Purpose**: Sends navigation goals to the navigation system
-- **Message Format**: Same as `/requested_location`
-- **Expected Behavior**: Navigation system should process these goals and move the robot
-- **Queue Size**: 10 messages
+1. `/go_to_location` (std_msgs/String)
+   - Forwards location requests to the navigation system
+   - Uses the same JSON format as received from `/requested_location`
 
-#### 2. `/pai_details` (std_msgs/String)
-- **Purpose**: Forwards navigation status to other system components
-- **Message Format**: Same as `/nav_status`
-- **Expected Behavior**: Other components can monitor navigation progress
-- **Queue Size**: 10 messages
+2. `/pai_details` (std_msgs/String)
+   - Publishes navigation status summaries
+   - Example payload:
+     ```json
+     {
+       "location": "office",
+       "status": "arrived",
+       "distance": 2.4,
+       "time": 1.8
+     }
+     ```
+
+## Node Behavior
+
+1. Location Request Handling:
+   - Receives location requests via `/requested_location`
+   - Logs the received request
+   - Forwards the request to `/go_to_location`
+   - Maintains internal state of the current navigation goal
+
+2. Navigation Status Processing:
+   - Receives status updates via `/nav2_status`
+   - Logs the received status
+   - Updates internal system status
+   - Publishes status summary to `/pai_details`
+
+## Testing
+
+To test the navigation node:
+
+1. Start the node:
+   ```bash
+   ros2 run creova_state_machine navigation_node
+   ```
+
+2. Send a location request:
+   ```bash
+   ros2 topic pub --once /requested_location std_msgs/String "data: '{\"name\": \"office\", \"x\": 5.2, \"y\": 3.1}'"
+   ```
+
+3. Send a navigation status update:
+   ```bash
+   ros2 topic pub --once /nav2_status std_msgs/String "data: '{\"status\": \"arrived\", \"location\": \"office\", \"distance\": 2.4, \"time\": 1.8}'"
+   ```
+
+## Error Handling
+
+The node includes comprehensive error handling for:
+- JSON parsing errors
+- Invalid message formats
+- Missing required fields
+
+All errors are logged with appropriate error messages.
+
+## Dependencies
+
+- ROS 2 Humble
+- std_msgs
+- rclpy
 
 ## Key Features
 
 ### State Management
 - Maintains current system status in `self.system_status`
-- Updates status on each `/nav_status` message
+- Updates status on each `/nav2_status` message
 - Provides status information to other components
 
 ### Message Handling
@@ -78,18 +113,6 @@ ros2 topic pub /nav_status std_msgs/String '{"data": "{\"status\": \"arrived\", 
 - Provides detailed error messages
 - Tracks state changes and message processing
 
-## Error Handling
-
-### JSON Parsing
-- Validates JSON format
-- Handles missing or malformed fields
-- Provides clear error messages
-
-### Navigation Status
-- Monitors navigation progress
-- Handles timeout scenarios
-- Reports navigation failures
-
 ## Integration Guidelines
 
 ### For Navigation System Team
@@ -99,7 +122,7 @@ ros2 topic pub /nav_status std_msgs/String '{"data": "{\"status\": \"arrived\", 
    - Use consistent location naming
 
 2. **Status Updates**
-   - Provide regular status updates through `/nav_status`
+   - Provide regular status updates through `/nav2_status`
    - Include accurate distance and time information
    - Report any navigation errors or issues
 
@@ -131,26 +154,6 @@ source install/setup.bash
 ### Run
 ```bash
 ros2 run creova_state_machine navigation_node
-```
-
-## Testing
-
-### Basic Test
-```bash
-# Terminal 1: Run the node
-ros2 run creova_state_machine navigation_node
-
-# Terminal 2: Send a location request
-ros2 topic pub /requested_location std_msgs/String '{"data": "{\"name\": \"Zubin'\''s office\", \"x\": 5.2, \"y\": 3.1}"}' --once
-
-# Terminal 3: Monitor navigation status
-ros2 topic echo /pai_details
-```
-
-### Status Update Test
-```bash
-# Send a navigation status update
-ros2 topic pub /nav_status std_msgs/String '{"data": "{\"status\": \"arrived\", \"location\": \"Zubin'\''s office\", \"distance\": 2.4, \"time\": 1.8}"}' --once
 ```
 
 ## Troubleshooting
