@@ -31,7 +31,8 @@ setup(
             'physical_ai_node = creova_state_machine.nodes.physical_ai_node:main',
             'get_destination_client = creova_state_machine.nodes.get_destination_client:main',
             'destination_server_node = creova_state_machine.nodes.destination_server_node:main',
-            'hw_sw_node = creova_state_machine.nodes.hw_sw_node:main'
+            'hw_sw_node = creova_state_machine.nodes.hw_sw_node:main',
+            'test_destination_server = creova_state_machine.nodes.test_destination_server:main',
         ],
     },
 )

@@ -2,14 +2,13 @@
 """
 destination_server_node.py
 • Subscribes to /latest_destination (std_msgs/String)
-• Subscribes to /lid_closed      (std_msgs/Bool)
 • Offers  /get_destination (std_srvs/Trigger)
 """
 
 from typing import Optional
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
 
@@ -18,29 +17,20 @@ class DestinationServer(Node):
         super().__init__("destination_server_node")
 
         self._latest_dest: Optional[str] = None
-        self._lid_closed = False
 
-        self.create_subscription(String, "/latest_destination", self._dest_cb, 1)
-        self.create_subscription(Bool,   "/lid_closed",         self._lid_cb, 1)
+        self.create_subscription(String, "/latest_destination", self._dest_cb, 10)
         self.create_service(Trigger, "get_destination", self._srv_cb)
 
-        self.get_logger().info("Service ready: /get_destination  (gated by /lid_closed)")
+        self.get_logger().info("Service ready: /get_destination")
 
     # ------------------------------------------------------------------
     def _dest_cb(self, msg: String) -> None:
         self._latest_dest = msg.data or None
-        self.get_logger().debug(f"Cached destination → {self._latest_dest!r}")
-
-    def _lid_cb(self, msg: Bool) -> None:
-        self._lid_closed = msg.data
-        state = "CLOSED" if msg.data else "OPEN"
-        self.get_logger().info(f"Lid state ⇒ {state}")
+        self.get_logger().info(f"Cached destination → {self._latest_dest!r}")
 
     # ------------------------------------------------------------------
     def _srv_cb(self, _req: Trigger.Request, res: Trigger.Response):
-        if not self._lid_closed:
-            res.success, res.message = False, "lid open"
-        elif self._latest_dest is None:
+        if self._latest_dest is None:
             res.success, res.message = False, "no destination stored"
         else:
             res.success, res.message = True, self._latest_dest
@@ -61,3 +51,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+
