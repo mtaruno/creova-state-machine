@@ -68,5 +68,16 @@ def generate_launch_description():
             parameters=[{
                 'use_sim_time': use_sim_time,
             }]
+        ),
+
+        # Destination Server Node
+        Node(
+            package='creova_state_machine',
+            executable='destination_server_node',
+            name='destination_server_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+            }]
         )
     ])

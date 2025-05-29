@@ -33,6 +33,7 @@ setup(
             'destination_server_node = creova_state_machine.nodes.destination_server_node:main',
             'hw_sw_node = creova_state_machine.nodes.hw_sw_node:main',
             'test_destination_server = creova_state_machine.nodes.test_destination_server:main',
+            'get_destination_server = creova_state_machine.nodes.get_destination_server:main'
         ],
     },
 )
