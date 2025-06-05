@@ -14,7 +14,7 @@ from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
 
-DELAY_SECS = 120        # hold time before the destination is handed out
+DELAY_SECS = 90     # hold time before the destination is handed out
 
 
 class DestinationServer(Node):
