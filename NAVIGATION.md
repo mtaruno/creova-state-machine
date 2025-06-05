@@ -14,7 +14,7 @@ The Navigation Node is responsible for handling location requests and navigation
      {
        "name": "office",
        "x": 5.2,
-       "y": 3.1
+       "y": 3.2
      }
      ```
 

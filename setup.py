@@ -7,7 +7,7 @@ package_name = 'creova_state_machine'
 setup(
     name=package_name,
     version='0.0.1',
-    packages=[package_name, f'{package_name}.nodes'],
+    packages=[package_name, f'{package_name}.nodes', f'{package_name}.test'],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -38,6 +38,9 @@ setup(
             'status_logger_node = creova_state_machine.nodes.status_logger_node:main',
             'status_replayer_node = creova_state_machine.nodes.status_replayer_node:main',
             'nav_ready_trigger = creova_state_machine.nodes.nav_ready_trigger:main',   
+            'state_monitor_node = creova_state_machine.nodes.state_monitor_node:main',
+            'test_orchestration = creova_state_machine.test.test_orchestration:main',
+
         ],
     },
 )

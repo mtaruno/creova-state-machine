@@ -6,7 +6,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     # Declare launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time')
-    
+
     return LaunchDescription([
         # Declare launch arguments
         DeclareLaunchArgument(
@@ -14,7 +14,7 @@ def generate_launch_description():
             default_value='false',
             description='Use simulation time'
         ),
-        
+
         # Navigation Node
         Node(
             package='creova_state_machine',
@@ -31,7 +31,7 @@ def generate_launch_description():
                 ('pai_details', '/navigation/status_summary')
             ]
         ),
-        
+
         # Perception Node
         Node(
             package='creova_state_machine',
@@ -47,7 +47,7 @@ def generate_launch_description():
                 ('pick_result', '/perception/pick_result')
             ]
         ),
-        
+
         # Orchestration Node
         Node(
             package='creova_state_machine',
@@ -58,12 +58,23 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time,
             }]
         ),
-        
+
         # Manipulation Node
         Node(
             package='creova_state_machine',
             executable='manipulation_node',
             name='manipulation_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+            }]
+        ),
+
+        # Physical AI Node
+        Node(
+            package='creova_state_machine',
+            executable='physical_ai_node',
+            name='physical_ai_node',
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
