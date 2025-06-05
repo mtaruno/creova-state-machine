@@ -7,7 +7,7 @@ The Navigation Node is responsible for handling location requests and navigation
 
 ### Subscribed Topics
 
-1. `/requested_location` (std_msgs/String)
+1. `/navigation/goal` (std_msgs/String)
    - Receives location requests in JSON format
    - Example payload:
      ```json
@@ -18,7 +18,7 @@ The Navigation Node is responsible for handling location requests and navigation
      }
      ```
 
-2. `/nav2_status` (std_msgs/String)
+2. `/navigation/status` (std_msgs/String)
    - Receives navigation status updates in JSON format
    - Example payload:
      ```json
@@ -32,11 +32,11 @@ The Navigation Node is responsible for handling location requests and navigation
 
 ### Published Topics
 
-1. `/go_to_location` (std_msgs/String)
+1. `/navigation/set_goal` (std_msgs/String)
    - Forwards location requests to the navigation system
-   - Uses the same JSON format as received from `/requested_location`
+   - Uses the same JSON format as received from `/navigation/goal`
 
-2. `/pai_details` (std_msgs/String)
+2. `/navigation/status_summary` (std_msgs/String)
    - Publishes navigation status summaries
    - Example payload:
      ```json
@@ -51,16 +51,16 @@ The Navigation Node is responsible for handling location requests and navigation
 ## Node Behavior
 
 1. Location Request Handling:
-   - Receives location requests via `/requested_location`
+   - Receives location requests via `/navigation/goal`
    - Logs the received request
-   - Forwards the request to `/go_to_location`
+   - Forwards the request to `/navigation/set_goal`
    - Maintains internal state of the current navigation goal
 
 2. Navigation Status Processing:
-   - Receives status updates via `/nav2_status`
+   - Receives status updates via `/navigation/status`
    - Logs the received status
    - Updates internal system status
-   - Publishes status summary to `/pai_details`
+   - Publishes status summary to `/navigation/status_summary`
 
 ## Testing
 
@@ -73,12 +73,17 @@ To test the navigation node:
 
 2. Send a location request:
    ```bash
-   ros2 topic pub --once /requested_location std_msgs/String "data: '{\"name\": \"office\", \"x\": 5.2, \"y\": 3.1}'"
+   ros2 topic pub --once /navigation/goal std_msgs/String "data: '{\"name\": \"office\", \"x\": 5.2, \"y\": 3.1}'"
    ```
 
 3. Send a navigation status update:
    ```bash
-   ros2 topic pub --once /nav2_status std_msgs/String "data: '{\"status\": \"arrived\", \"location\": \"office\", \"distance\": 2.4, \"time\": 1.8}'"
+   ros2 topic pub --once /navigation/status std_msgs/String "data: '{\"status\": \"arrived\", \"location\": \"office\", \"distance\": 2.4, \"time\": 1.8}'"
+   ```
+
+4. Monitor the status summary:
+   ```bash
+   ros2 topic echo /navigation/status_summary
    ```
 
 ## Error Handling
@@ -100,7 +105,7 @@ All errors are logged with appropriate error messages.
 
 ### State Management
 - Maintains current system status in `self.system_status`
-- Updates status on each `/nav2_status` message
+- Updates status on each `/navigation/status` message
 - Provides status information to other components
 
 ### Message Handling
@@ -122,12 +127,12 @@ All errors are logged with appropriate error messages.
    - Use consistent location naming
 
 2. **Status Updates**
-   - Provide regular status updates through `/nav2_status`
+   - Provide regular status updates through `/navigation/status`
    - Include accurate distance and time information
    - Report any navigation errors or issues
 
 3. **Navigation Goals**
-   - Process goals received through `/go_to_location`
+   - Process goals received through `/navigation/set_goal`
    - Validate coordinates before execution
    - Report progress through status updates
 
@@ -138,7 +143,7 @@ All errors are logged with appropriate error messages.
    - Handle navigation status responses
 
 2. **Monitoring Progress**
-   - Subscribe to `/pai_details` for status updates
+   - Subscribe to `/navigation/status_summary` for status updates
    - Handle all possible status values
    - Implement appropriate error handling
 

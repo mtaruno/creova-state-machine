@@ -7,7 +7,7 @@ The Perception Node manages object detection and manipulation requests. It proce
 
 ### Subscribers
 
-#### 1. `/object_list` (std_msgs/String)
+#### 1. `/perception/object_list` (std_msgs/String)
 - **Purpose**: Receives list of detected objects from the perception system
 - **Message Format**: JSON string
 ```json
@@ -33,20 +33,20 @@ The Perception Node manages object detection and manipulation requests. It proce
   - `z`: Z coordinate (float)
 - **Example Usage**:
 ```bash
-ros2 topic pub /object_list std_msgs/String '{"data": "[{\"name\": \"apple\", \"x\": 1.2, \"y\": 0.4, \"z\": 0.1}, {\"name\": \"banana\", \"x\": 2.0, \"y\": 0.5, \"z\": 0.2}]"}' --once
+ros2 topic pub /perception/object_list std_msgs/String '{"data": "[{\"name\": \"apple\", \"x\": 1.2, \"y\": 0.4, \"z\": 0.1}, {\"name\": \"banana\", \"x\": 2.0, \"y\": 0.5, \"z\": 0.2}]"}' --once
 ```
 
-#### 2. `/pick_object` (std_msgs/String)
+#### 2. `/perception/pick_request` (std_msgs/String)
 - **Purpose**: Receives object pick requests
 - **Message Format**: Simple string with object name
 - **Example Usage**:
 ```bash
-ros2 topic pub /pick_object std_msgs/String '{"data": "apple"}' --once
+ros2 topic pub /perception/pick_request std_msgs/String '{"data": "apple"}' --once
 ```
 
 ### Publishers
 
-#### 1. `/manipulation_object` (std_msgs/String)
+#### 1. `/perception/object_details` (std_msgs/String)
 - **Purpose**: Sends object details for manipulation when found
 - **Message Format**: JSON string with full object details
 ```json
@@ -59,7 +59,7 @@ ros2 topic pub /pick_object std_msgs/String '{"data": "apple"}' --once
 ```
 - **Queue Size**: 10 messages
 
-#### 2. `/validation_object` (std_msgs/String)
+#### 2. `/perception/validation_request` (std_msgs/String)
 - **Purpose**: Sends object name for validation when not found
 - **Message Format**: Simple string with object name
 - **Queue Size**: 10 messages
@@ -116,7 +116,7 @@ ros2 topic pub /pick_object std_msgs/String '{"data": "apple"}' --once
 
 ### For Manipulation Team
 1. **Object Details**
-   - Process object coordinates from `/manipulation_object`
+   - Process object coordinates from `/perception/object_details`
    - Handle object validation requests
    - Implement appropriate error handling
 
@@ -141,28 +141,28 @@ ros2 run creova_state_machine perception_node
 
 ## Testing
 
-### Basic Test
+### Object Detection Test
 ```bash
-# Terminal 1: Run the node
+# Terminal 1: Start the perception node
 ros2 run creova_state_machine perception_node
 
-# Terminal 2: Send an object list
-ros2 topic pub /object_list std_msgs/String '{"data": "[{\"name\": \"apple\", \"x\": 1.2, \"y\": 0.4, \"z\": 0.1}, {\"name\": \"banana\", \"x\": 2.0, \"y\": 0.5, \"z\": 0.2}]"}' --once
+# Terminal 2: Send object list
+ros2 topic pub /perception/object_list std_msgs/String '{"data": "[{\"name\": \"apple\", \"x\": 1.2, \"y\": 0.4, \"z\": 0.1}, {\"name\": \"banana\", \"x\": 2.0, \"y\": 0.5, \"z\": 0.2}]"}' --once
 
 # Terminal 3: Send a pick request
-ros2 topic pub /pick_object std_msgs/String '{"data": "apple"}' --once
+ros2 topic pub /perception/pick_request std_msgs/String '{"data": "apple"}' --once
 
-# Terminal 4: Monitor manipulation object
-ros2 topic echo /manipulation_object
+# Terminal 4: Monitor object details
+ros2 topic echo /perception/object_details
 ```
 
 ### Validation Test
 ```bash
 # Send a pick request for non-existent object
-ros2 topic pub /pick_object std_msgs/String '{"data": "orange"}' --once
+ros2 topic pub /perception/pick_request std_msgs/String '{"data": "orange"}' --once
 
-# Monitor validation object
-ros2 topic echo /validation_object
+# Monitor validation request
+ros2 topic echo /perception/validation_request
 ```
 
 ## Troubleshooting

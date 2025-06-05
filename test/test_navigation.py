@@ -11,18 +11,18 @@ class NavigationTester(Node):
         super().__init__('navigation_tester')
         
         # Create publishers
-        self.goal_pub = self.create_publisher(String, '/navigation/goal', 10)
-        self.status_pub = self.create_publisher(String, '/navigation/status', 10)
+        self.goal_pub = self.create_publisher(String, 'requested_location', 10)
+        self.status_pub = self.create_publisher(String, 'nav2_status', 10)
         
         # Create subscribers
         self.goal_sub = self.create_subscription(
             String,
-            '/navigation/set_goal',
+            'go_to_location',
             self.goal_callback,
             10)
         self.status_sub = self.create_subscription(
             String,
-            '/navigation/status_summary',
+            'pai_details',
             self.status_callback,
             10)
         

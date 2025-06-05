@@ -40,21 +40,24 @@ The orchestration node maintains the following states:
 
 ### Example: User says "Bring me an apple"
 
-Physical AI
+| Step | From → To                   | Topic/Service/Action             | Message Type                | Notes/Key Fields                   | FSM Transition                      |
+| ---- | --------------------------- | -------------------------------- | --------------------------- | ---------------------------------- | ----------------------------------- |
+| 1    | Physical AI → Orchestration | `/pai/intent_out` (topic)        | `custom_msgs/Intent`        | `action: "fetch", object: "apple"` | `IDLE → PARSING_INTENT`             |
+| 2    | FSM internal logic          | —                                | —                           | —                                  | `PARSING_INTENT → OBJECT_DETECTION` |
+| 3    | FSM → Perception            | `/perception/detect_object`      | `custom_msgs/ObjectRequest` | `class_label: "apple"`             | —                                   |
+| 4    | Perception → FSM            | `/perception/object_pose`        | `custom_msgs/ObjectPose`    | `x, y, z, label, confidence`       | `OBJECT_DETECTION → PICK`           |
+| 5    | FSM → Manipulation          | `/manipulation/pick`             | `custom_msgs/PickCommand`   | `pose + label`                     | —                                   |
+| 6    | Manipulation → FSM          | `/manipulation/object_acquired`  | `custom_msgs/Status`        | `success: true`                    | `PICK → NAVIGATE_TO_HANDOFF`        |
+| 7    | FSM → Navigation            | `/navigation/go_to_arm`          | `geometry_msgs/PoseStamped` | `handoff pose`                     | —                                   |
+| 8    | Navigation → FSM            | `/navigation/at_location`        | `custom_msgs/Status`        | `success: true`                    | `NAVIGATE_TO_HANDOFF → HANDOFF`     |
+| 9    | FSM → Manipulation          | `/manipulation/handoff`          | `std_msgs/Empty`            | —                                  | —                                   |
+| 10   | Manipulation → FSM          | `/manipulation/handoff_complete` | `custom_msgs/Status`        | `success: true`                    | `HANDOFF → NAVIGATE_TO_USER`        |
+| 11   | FSM → Navigation            | `/navigation/go_to_user`         | `geometry_msgs/PoseStamped` | `user_location (x, y)`             | —                                   |
+| 12   | Navigation → FSM            | `/navigation/delivery_complete`  | `custom_msgs/Status`        | `success: true`                    | `NAVIGATE_TO_USER → DELIVERY`       |
+| 13   | FSM → Navigation            | `/navigation/return_to_base`     | `std_msgs/Empty`            | —                                  | —                                   |
+| 14   | Navigation → FSM            | `/navigation/at_base`            | `custom_msgs/Status`        | `success: true`                    | `RETURN → IDLE`                     |
 
-
-Perception
-
-
-Manipulation
-
-
-
-Navigation
-
-
-
-
+---
 
 ## 🤖 ROS Components
 

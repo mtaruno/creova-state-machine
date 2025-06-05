@@ -1,72 +1,45 @@
-#!/usr/bin/env python3
-"""
-physical_ai_node.py  (listener / broadcaster)
-
-• Subscribes: /robot_command  (std_msgs/String, JSON payload)
-• Publishes : /latest_destination (std_msgs/String)
-              /latest_object      (std_msgs/String)
-              /latest_task_id     (std_msgs/String)
-
-Expected JSON payload:
-{
-    "id":          <int | str>,
-    "object":      "<object_name>",
-    "destination": "<pose_or_location>"
-}
-"""
-
+#!/usr/bin/env python
+import rospy
 import json
-import rclpy
-from rclpy.node import Node
+import threading
 from std_msgs.msg import String
+from string_service_demo.srv import StringService, StringServiceResponse
 
+published_once = False  # 控制是否已发布
 
-class PhysicalAINode(Node):
-    def __init__(self) -> None:
-        super().__init__("physical_ai_node")
+def publish_status_once(pub):
+    status_msgs = ["starting", "navigating", "manipulating", "deliverying", "done"]
+    for msg in status_msgs:
+        pub.publish(msg)
+        rospy.loginfo("Published status: %s", msg)
+        rospy.sleep(10)  # 每个状态之间间隔10秒
 
-        # Subscription to /robot_command
-        self.create_subscription(String, 'robot_command', self._cmd_cb, 10)
-
-        # Publishers for individual fields
-        self.dest_pub = self.create_publisher(String, "/latest_destination", 10)
-        self.obj_pub  = self.create_publisher(String, "/latest_object", 10)
-        self.id_pub   = self.create_publisher(String, "/latest_task_id", 10)
-
-        print('[physical_ai_node] Listening on topic: robot_command')
-
-    def _cmd_cb(self, msg: String) -> None:
-        try:
-            data = json.loads(msg.data)
-
-            dest = str(data.get("destination", ""))
-            obj  = str(data.get("object", ""))
-            task = str(data.get("id", ""))
-
-            print(f'[physical_ai_node] Received command:\n'
-                  f'id={task}, object={obj}, destination={dest}, raw={msg.data}')
-
-            # Publish fields
-            self.dest_pub.publish(String(data=dest))
-            self.obj_pub.publish(String(data=obj))
-            self.id_pub.publish(String(data=task))
-
-        except Exception as e:
-            print(f'[physical_ai_node] Received invalid message: {msg.data}, error: {e}')
-
-
-def main(args=None) -> None:
-    rclpy.init(args=args)
-    node = PhysicalAINode()
+def handle(req):
+    global published_once
+    rospy.loginfo("Received request: %s", req.data)
     try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        print('[physical_ai_node] Shutting down')
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        data = json.loads(req.data)
+        location_list = ["sofa", "sink", "elevator","lab", "wall"]
+        if data["destination"] in location_list:
+            if not published_once:
+                # 异步线程来发布状态
+                threading.Thread(target=publish_status_once, args=(pub,)).start()
+                published_once = True
+            return StringServiceResponse(result="Start")
+        else:
+            return StringServiceResponse(result="Invalid")
+    except Exception as e:
+        rospy.logerr("Invalid JSON: %s", str(e))
+        return StringServiceResponse(result=req.data)
 
+def main():
+    global pub
+    rospy.init_node('string_service_server')
+    rospy.Service('/send_string', StringService, handle)
+    rospy.loginfo("Service [/send_string] ready.")
+    pub = rospy.Publisher('/robot_status', String, queue_size=10)
+    rospy.loginfo("Publisher [/robot_status] ready.")
+    rospy.spin()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
-
