@@ -1,45 +1,64 @@
-#!/usr/bin/env python
-import rospy
+#!/usr/bin/env python3
+"""
+robot_command_subscriber.py
+---------------------------
+• Subscribes: /robot_command   (std_msgs/String with JSON payload)
+• Publishes : /object_name     (std_msgs/String, just the object name)
+"""
+
 import json
-import threading
+import rclpy
+from rclpy.node import Node
 from std_msgs.msg import String
-from string_service_demo.srv import StringService, StringServiceResponse
 
-published_once = False  # 控制是否已发布
 
-def publish_status_once(pub):
-    status_msgs = ["starting", "navigating", "manipulating", "deliverying", "done"]
-    for msg in status_msgs:
-        pub.publish(msg)
-        rospy.loginfo("Published status: %s", msg)
-        rospy.sleep(10)  # 每个状态之间间隔10秒
+def main() -> None:
+    rclpy.init()
+    node = Node("robot_command_subscriber")
 
-def handle(req):
-    global published_once
-    rospy.loginfo("Received request: %s", req.data)
+    # Publisher to send the extracted object name
+    obj_pub = node.create_publisher(String, "object_name", 10)
+
+    # ----------------------------------------------------------
+    #  Callback for /robot_command
+    # ----------------------------------------------------------
+    def callback(msg: String) -> None:
+        try:
+            data = json.loads(msg.data)
+            obj = data.get("object", "")
+
+            print(
+                "[robot_command_subscriber] Received command: "
+                f"id={data.get('id')}, object={obj}, "
+                f"destination={data.get('destination')}, raw={msg.data}"
+            )
+
+            # Publish the object name (if present) on /object_name
+            if obj:
+                out_msg = String(data=obj)
+                obj_pub.publish(out_msg)
+                print(f"[robot_command_subscriber] → published object_name: {obj}")
+
+        except Exception as e:  # noqa: B902
+            print(
+                "[robot_command_subscriber] Invalid message received: "
+                f"{msg.data}, error: {e}"
+            )
+
+    # Subscription
+    node.create_subscription(String, "robot_command", callback, 10)
+    print("[robot_command_subscriber] Listening on topic: /robot_command")
+
+    # Spin until Ctrl-C
     try:
-        data = json.loads(req.data)
-        location_list = ["sofa", "sink", "elevator","lab", "wall"]
-        if data["destination"] in location_list:
-            if not published_once:
-                # 异步线程来发布状态
-                threading.Thread(target=publish_status_once, args=(pub,)).start()
-                published_once = True
-            return StringServiceResponse(result="Start")
-        else:
-            return StringServiceResponse(result="Invalid")
-    except Exception as e:
-        rospy.logerr("Invalid JSON: %s", str(e))
-        return StringServiceResponse(result=req.data)
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        print("Shutting down robot_command_subscriber")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
-def main():
-    global pub
-    rospy.init_node('string_service_server')
-    rospy.Service('/send_string', StringService, handle)
-    rospy.loginfo("Service [/send_string] ready.")
-    pub = rospy.Publisher('/robot_status', String, queue_size=10)
-    rospy.loginfo("Publisher [/robot_status] ready.")
-    rospy.spin()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
+
