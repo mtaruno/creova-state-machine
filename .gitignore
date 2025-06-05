@@ -14,6 +14,7 @@ log/
 .ros/orchestrator_states/
 *.jsonl
 *_state.json
+detections.json
 
 # Editor files
 *~
