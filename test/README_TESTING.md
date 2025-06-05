@@ -21,7 +21,15 @@ ros2 topic echo /system_status
 ros2 run creova_state_machine manual_test_orchestration
 ```
 
-## How Your Implementation Works
+## HoNode(
+            package='creova_state_machine',
+            executable='state_monitor_node',
+            name='state_monitor_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+            }]
+        ),w Your Implementation Works
 
 ## End-to-End Flow: How Your State Machine Works
 

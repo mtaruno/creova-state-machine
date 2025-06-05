@@ -1,0 +1,17 @@
+<package format="3">
+  <name>trans_msgs</name>
+  <version>0.0.0</version>
+  <description>Custom messages for trans</description>
+  <maintainer email="wch1007@uw.edu">rosdev</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

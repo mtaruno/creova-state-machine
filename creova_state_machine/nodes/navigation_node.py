@@ -152,7 +152,7 @@ def main(args=None):
     Handles graceful shutdown on keyboard interrupt.
     """
     rclpy.init(args=args)
-    node = NavStatusRecorder()
+    node = NavigationNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

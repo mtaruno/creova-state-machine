@@ -15,24 +15,46 @@ def generate_launch_description():
             description='Use simulation time'
         ),
 
-        # Navigation Node
+        # Core Orchestration Node - The main state machine
         Node(
             package='creova_state_machine',
-            executable='navigation_node',
-            name='navigation_node',
+            executable='orchestration_node',
+            name='orchestration_node',
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
             }],
-            remappings=[
-                ('nav2_status', '/navigation/status'),
-                ('requested_location', '/navigation/goal'),
-                ('go_to_location', '/navigation/set_goal'),
-                ('pai_details', '/navigation/status_summary')
-            ]
+            respawn=True,
+            respawn_delay=2.0
         ),
 
-        # Perception Node
+        # State Monitor Node - Publishes /system_status for Physical AI team
+        Node(
+            package='creova_state_machine',
+            executable='state_monitor_node',
+            name='state_monitor_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+            }],
+            respawn=True,
+            respawn_delay=2.0
+        ),
+
+        # Physical AI Node - Voice commands and user interaction
+        Node(
+            package='creova_state_machine',
+            executable='physical_ai_node',
+            name='physical_ai_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+            }],
+            respawn=True,
+            respawn_delay=2.0
+        ),
+
+        # Perception Node - Object detection
         Node(
             package='creova_state_machine',
             executable='perception_node',
@@ -41,25 +63,11 @@ def generate_launch_description():
             parameters=[{
                 'use_sim_time': use_sim_time,
             }],
-            remappings=[
-                ('object_list', '/perception/objects'),
-                ('pick_request', '/perception/pick_request'),
-                ('pick_result', '/perception/pick_result')
-            ]
+            respawn=True,
+            respawn_delay=2.0
         ),
 
-        # Orchestration Node
-        Node(
-            package='creova_state_machine',
-            executable='orchestration_node',
-            name='orchestration_node',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-            }]
-        ),
-
-        # Manipulation Node
+        # Manipulation Node - Kinova arm control
         Node(
             package='creova_state_machine',
             executable='manipulation_node',
@@ -67,21 +75,25 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
-            }]
+            }],
+            respawn=True,
+            respawn_delay=2.0
         ),
 
-        # Physical AI Node
+        # Navigation Node - Create3 robot navigation
         Node(
             package='creova_state_machine',
-            executable='physical_ai_node',
-            name='physical_ai_node',
+            executable='navigation_node',
+            name='navigation_node',
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
-            }]
+            }],
+            respawn=True,
+            respawn_delay=2.0
         ),
 
-        # Destination Server Node
+        # Destination Server Node - Provides destination service
         Node(
             package='creova_state_machine',
             executable='destination_server_node',
@@ -89,15 +101,8 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
-            }]
-        ),
-        Node(
-            package='creova_state_machine',
-            executable='state_monitor_node',
-            name='state_monitor_node',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-            }]
+            }],
+            respawn=True,
+            respawn_delay=2.0
         )
     ])
