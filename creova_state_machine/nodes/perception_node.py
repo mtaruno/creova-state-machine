@@ -1,66 +1,46 @@
 #!/usr/bin/env python3
-"""
-perception_node.py
-──────────────────
-Subscriber for the topic `/detections_3d_transformed` (yolo_msgs/DetectionArray).
-
-For every DetectionArray it logs how many detections were received and the
-(x, y, z) coordinates of each 3-D bounding-box centre.
-
-Usage
------
-# 1.  Place this file in your package’s scripts/ directory.
-# 2.  Make it executable:  chmod +x perception_node.py
-# 3.  Re-build and source your workspace.
-# 4.  Run:  ros2 run <your_pkg> perception_node.py
-"""
 
 import rclpy
 from rclpy.node import Node
-from yolo_msgs.msg import DetectionArray
+from trans_msgs.msg import FinalDetection
+import json
+import os
 
-
-class PerceptionNode(Node):
-    """Logs transformed 3-D YOLO detections."""
-
-    def __init__(self) -> None:
-        super().__init__("perception_node")  # Node name as requested
-
-        self.create_subscription(
-            DetectionArray,
-            "/detections_3d_transformed",   # topic published by the transformer
-            self._callback,
-            10                               # QoS depth
+class PerceptionRecorder(Node):
+    def __init__(self):
+        super().__init__('perception_recorder')
+        self.subscription = self.create_subscription(
+            FinalDetection,
+            '/final/xyz',
+            self.listener_callback,
+            10
         )
+        self.detections = {}
+        self.file_path = 'detections.json'
+        self.get_logger().info('Recording detections to local file.')
 
-        self.get_logger().info("🟣 perception_node listening on /detections_3d_transformed")
+    def listener_callback(self, msg):
+        self.detections[msg.object_name] = {
+            'x': msg.x,
+            'y': msg.y,
+            'z': msg.z
+        }
 
-    # ------------------------------------------------------------------
-    def _callback(self, msg: DetectionArray) -> None:
-        n = len(msg.detections)
-        if n == 0:
-            return
+        with open(self.file_path, 'w') as f:
+            json.dump(self.detections, f, indent=2)
 
-        self.get_logger().info(f"Received {n} detection{'s' if n > 1 else ''}:")
-        for i, det in enumerate(msg.detections, start=1):
-            center = det.bbox3d.center.position
-            self.get_logger().info(
-                f"  #{i:02d} → x={center.x:.3f}, y={center.y:.3f}, z={center.z:.3f}"
-            )
+        self.get_logger().info(f'Updated {msg.object_name} → ({msg.x:.2f}, {msg.y:.2f}, {msg.z:.2f})')
 
-
-# ----------------------------------------------------------------------
-def main(args=None) -> None:
+def main(args=None):
     rclpy.init(args=args)
-    node = PerceptionNode()
+    node = PerceptionRecorder()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        pass
+        node.get_logger().info('Recorder node interrupted.')
     finally:
         node.destroy_node()
         rclpy.shutdown()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

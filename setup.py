@@ -33,6 +33,11 @@ setup(
             'destination_server_node = creova_state_machine.nodes.destination_server_node:main',
             'hw_sw_node = creova_state_machine.nodes.hw_sw_node:main',
             'test_destination_server = creova_state_machine.nodes.test_destination_server:main',
+            'test_perception = creova_state_machine.nodes.test_perception:main',
+            'publisher = creova_state_machine.nodes.publisher:main',
+            'status_logger_node = creova_state_machine.nodes.status_logger_node:main',
+            'status_replayer_node = creova_state_machine.nodes.status_replayer_node:main',
+            'final_detection_subscriber = creova_state_machine.nodes.final_detection_subscriber:main',
         ],
     },
 )

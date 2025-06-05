@@ -23,6 +23,7 @@
   <depend>tf2_ros</depend>
   <depend>creova_state_machine_interfaces</depend>
   <depend>custom_msgs</depend>
+  <exec_depend>c8nav</exec_depend>
   <exec_depend>std_srvs</exec_depend>
 
   <export>
