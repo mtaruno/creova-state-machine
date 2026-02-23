@@ -1,13 +1,12 @@
 # Creova State Machine
 
-NOTICE: This work has been accepted to HRI 2026; you can read this paper here:
-
+**NOTICE: This work has been accepted to HRI 2026; you can read this paper here:
+**
 [HRI_2026_LBR.pdf](https://github.com/user-attachments/files/25502329/HRI_2026_LBR.pdf)
 
+## 🧠 System Overview
 
 A ROS 2 package for voice-controlled delivery robot system with integrated state management, perception, manipulation, and navigation capabilities.
-
-## 🧠 System Overview
 
 **Goal**: Take a voice command like "Bring me an apple" and autonomously:
 
